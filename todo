@@ -1,3 +1,5 @@
 - limit input buffer to 1
 - find optimal game loop time
 - collision detection
+- ball velocity needs to remain constant when moving on x and y
+- 

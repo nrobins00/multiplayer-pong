@@ -9,7 +9,9 @@ typedef struct game {
     WINDOW *win;
     int leftPadStart;
     int rightPadStart;
+    int leftPadV, rightPadV;
     int bulletX, bulletY;
+    int bulletVx, bulletVy;
 } game;
 
 game G;
@@ -43,12 +45,44 @@ void processKeyPress(int c) {
     if (c == KEY_DOWN) {
         clearPaddle(0);
         G.leftPadStart++;
+        G.leftPadV = 1;
         drawPaddle(G.leftPadStart, 0);
     } else if (c == KEY_UP) {
         clearPaddle(0);
         G.leftPadStart--;
+        G.leftPadV = -1;
         drawPaddle(G.leftPadStart, 0);
+    } else {
+        G.leftPadV = 0;
     }
+}
+
+int detectCollision() {
+        if (G.bulletX == 1) {
+            if (G.leftPadStart > G.bulletY || G.leftPadStart < G.bulletY - 4) {
+            //    return 1;
+            }
+            G.bulletVx = 1;
+            if (G.leftPadV != 0) {
+                G.bulletVy = G.leftPadV;
+            }
+        }
+        if (G.bulletX == WIDTH - 2) {
+            if (G.rightPadStart > G.bulletY || G.rightPadStart < G.bulletY - 4) {
+             //   return 1;
+            }
+            G.bulletVx = -1;
+            if (G.rightPadV != 0) {
+                G.bulletVy = G.rightPadV;
+            }
+        }
+        if (G.bulletY == 1) {
+            G.bulletVy = 1;
+        }
+        if (G.bulletY == HEIGHT ) {
+            G.bulletVy = -1;
+        }
+        return 0;
 }
 
 int main() {
@@ -69,15 +103,21 @@ int main() {
 
     G.bulletX = WIDTH/2;
     G.bulletY = HEIGHT/2;
+    G.bulletVx = -1;
     mvwaddch(G.win, G.bulletY, G.bulletX, '~' | ACS_BULLET);
     
 
     while (true) {
         processKeyPress(wgetch(G.win));
-        G.bulletX--;
+        detectCollision();
+
+        mvwaddch(G.win, G.bulletY, G.bulletX, ' ');
+        G.bulletX += G.bulletVx;
+        G.bulletY += G.bulletVy;
         mvwaddch(G.win, G.bulletY, G.bulletX, '~' | ACS_BULLET);
         wrefresh(G.win);
-        usleep(100000);
+        flushinp();
+        usleep(20000);
     }
     delwin(G.win);
 
