@@ -1,26 +1,35 @@
 #include <ncurses.h>
 #include <unistd.h>
 
-#define HEIGHT 30
-#define WIDTH 90
+#define HEIGHT 24
+#define WIDTH 80
 #define PADDLE_SIZE 4
+
+#define FLOAT_TO_INT(x) ((x)>=0?(int)((x)+0.5):((int)(x)-0.5))
 
 typedef struct game {
     WINDOW *win;
     int leftPadStart;
     int rightPadStart;
     int leftPadV, rightPadV;
-    int bulletX, bulletY;
-    int bulletVx, bulletVy;
+    int bulletX;
+    float bulletY;
+    int bulletVx;
+    float bulletVy;
 } game;
 
 game G;
+
+int floatToInt(float f) {
+    if (f >= 0) return (int)(f+0.5);
+    return (int)(f-0.5);
+}
 
 void drawPaddle(int startY, int rightSide) {
     int i;
     int col = rightSide == 1 ? WIDTH - 1 : 0;
     for (i = startY; i < startY + PADDLE_SIZE; i++) {
-        mvwaddch(G.win, i, col, 'x' | ACS_VLINE);
+        mvwaddch(G.win, i, col, ' ' | A_REVERSE);
     }
 }
 
@@ -35,7 +44,7 @@ void clearPaddle(int side) {
 
 void initWin() {
     WINDOW *win = newwin(HEIGHT, WIDTH, 0, 0);
-    wborder(win, ' ', ' ', 0, 0, ' ', ' ', ' ', ' ');
+    wborder(win, ' ', ' ', ' ' | A_REVERSE, ' ' | A_REVERSE, ' ', ' ', ' ', ' ');
 
     G.win = win;
     wrefresh(win);
@@ -53,35 +62,40 @@ void processKeyPress(int c) {
         G.leftPadV = -1;
         drawPaddle(G.leftPadStart, 0);
     } else {
-        G.leftPadV = 0;
+        //G.leftPadV = 0;
     }
 }
 
 int detectCollision() {
-        if (G.bulletX == 1) {
-            if (G.leftPadStart > G.bulletY || G.leftPadStart < G.bulletY - 4) {
-            //    return 1;
-            }
-            G.bulletVx = 1;
-            if (G.leftPadV != 0) {
-                G.bulletVy = G.leftPadV;
-            }
+    int bulletX = G.bulletX;
+    int bulletY = floatToInt(G.bulletY);
+    if (bulletX == 1) {
+
+        if (G.leftPadStart > bulletY || G.leftPadStart < bulletY - 4) {
+        //    return 1;
         }
-        if (G.bulletX == WIDTH - 2) {
-            if (G.rightPadStart > G.bulletY || G.rightPadStart < G.bulletY - 4) {
-             //   return 1;
-            }
-            G.bulletVx = -1;
-            if (G.rightPadV != 0) {
-                G.bulletVy = G.rightPadV;
-            }
-        }
-        if (G.bulletY == 1) {
+        if (bulletY == G.leftPadStart || bulletY == G.leftPadStart + 1) {
             G.bulletVy = 1;
-        }
-        if (G.bulletY == HEIGHT ) {
+        } else if (bulletY == G.leftPadStart + 2 || bulletY == G.leftPadStart + 3) {
             G.bulletVy = -1;
         }
+        G.bulletVx = 1;
+    }
+    if (bulletX == WIDTH - 2) {
+        if (G.rightPadStart > bulletY || G.rightPadStart < bulletY - 4) {
+         //   return 1;
+        }
+        G.bulletVx = -1;
+        if (G.rightPadV != 0) {
+            G.bulletVy = G.rightPadV;
+        }
+    }
+    if (bulletY <= 1 || bulletY >= HEIGHT - 2) {
+        G.bulletVy *= -1;
+        wmove(G.win, 7, 35);
+        wprintw(G.win, "hit at %d", bulletY);
+    }
+
         return 0;
 }
 
@@ -102,22 +116,29 @@ int main() {
     drawPaddle(G.rightPadStart, 1);
 
     G.bulletX = WIDTH/2;
-    G.bulletY = HEIGHT/2;
+    G.bulletY = HEIGHT/2.0;
     G.bulletVx = -1;
     mvwaddch(G.win, G.bulletY, G.bulletX, '~' | ACS_BULLET);
-    
+
+    uint8_t clock = 0;
 
     while (true) {
+        clock += 1;
         processKeyPress(wgetch(G.win));
         detectCollision();
 
-        mvwaddch(G.win, G.bulletY, G.bulletX, ' ');
+        mvwaddch(G.win, floatToInt(G.bulletY), G.bulletX, ' ');
         G.bulletX += G.bulletVx;
         G.bulletY += G.bulletVy;
-        mvwaddch(G.win, G.bulletY, G.bulletX, '~' | ACS_BULLET);
+        mvwaddch(G.win, floatToInt(G.bulletY), G.bulletX, ' ' | A_REVERSE);
+        wmove(G.win, 5, 35);
+        wprintw(G.win, "                 ");
+        wmove(G.win, 5, 35);
+        wprintw(G.win, "X: %d, Y: %d", G.leftPadStart, floatToInt(G.bulletY));
+        
         wrefresh(G.win);
         flushinp();
-        usleep(20000);
+        usleep(50000);
     }
     delwin(G.win);
 

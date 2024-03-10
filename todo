@@ -1,5 +1,13 @@
-- limit input buffer to 1
+(not complete)
 - find optimal game loop time
 - collision detection
 - ball velocity needs to remain constant when moving on x and y
+    probably need to change refresh rate for ball position to achieve this
+    if ball is moving in both directions, change its position at a rate of 1/sqrt(2)
 - 
+k
+
+
+
+(done)
+- limit input buffer to 1
