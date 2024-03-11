@@ -75,9 +75,9 @@ int detectCollision() {
         //    return 1;
         }
         if (bulletY == G.leftPadStart || bulletY == G.leftPadStart + 1) {
-            G.bulletVy = 1;
-        } else if (bulletY == G.leftPadStart + 2 || bulletY == G.leftPadStart + 3) {
             G.bulletVy = -1;
+        } else if (bulletY == G.leftPadStart + 2 || bulletY == G.leftPadStart + 3) {
+            G.bulletVy = 1;
         }
         G.bulletVx = 1;
     }
@@ -86,9 +86,6 @@ int detectCollision() {
          //   return 1;
         }
         G.bulletVx = -1;
-        if (G.rightPadV != 0) {
-            G.bulletVy = G.rightPadV;
-        }
     }
     if (bulletY <= 1 || bulletY >= HEIGHT - 2) {
         G.bulletVy *= -1;
