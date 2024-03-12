@@ -1,5 +1,9 @@
 #include <ncurses.h>
 #include <unistd.h>
+#include <sys/select.h> 
+#include <sys/time.h>
+
+#include "networking.h"
 
 #define HEIGHT 24
 #define WIDTH 80
@@ -87,14 +91,15 @@ int detectCollision() {
     }
     if (bulletY <= 1 || bulletY >= HEIGHT - 2) {
         G.bulletVy *= -1;
-        wmove(G.win, 7, 35);
-        wprintw(G.win, "hit at %d", bulletY);
+        //wmove(G.win, 7, 35);
+        //wprintw(G.win, "hit at %d", bulletY);
     }
 
         return 0;
 }
 
 int main() {
+
     initscr();
     cbreak();
     noecho();
@@ -117,7 +122,28 @@ int main() {
 
     uint8_t clock = 0;
 
+    int sockfd;
+    sockfd = setupHost();
+
+    //wmove(G.win, 7, 40);
+    //wprintw(G.win, "%d", sockfd);
+
+    char buf[MAXBUFLEN];
+    fd_set fdset;
+    struct timeval timeout;
+
+
     while (true) {
+        FD_ZERO(&fdset);
+        FD_SET(sockfd, &fdset);
+        timeout.tv_sec = 0;
+        timeout.tv_usec = 0;
+        if (select(FD_SETSIZE, &fdset, NULL, NULL, &timeout) > 0) {
+            readFromSock(sockfd, buf);
+            wmove(G.win, 7, 38);
+            wprintw(G.win, "%s", buf);
+        }
+
         clock += 1;
         processKeyPress(wgetch(G.win));
         detectCollision();
@@ -137,6 +163,7 @@ int main() {
     }
     delwin(G.win);
 
+	close(sockfd);
     endwin();
 
     return 0;
