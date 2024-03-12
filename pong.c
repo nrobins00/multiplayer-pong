@@ -5,8 +5,6 @@
 #define WIDTH 80
 #define PADDLE_SIZE 4
 
-#define FLOAT_TO_INT(x) ((x)>=0?(int)((x)+0.5):((int)(x)-0.5))
-
 typedef struct game {
     WINDOW *win;
     int leftPadStart;
