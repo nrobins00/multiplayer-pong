@@ -8,7 +8,15 @@ typedef struct game {
     int rightPadStart;
     int leftPadV, rightPadV;
     int bulletX;
-    float bulletY;
+    int bulletY;
     int bulletVx;
-    float bulletVy;
+    int bulletVy;
 } game;
+
+void processKeyPress(game *G, int c, int side);
+
+void detectCollision(game *G);
+
+void drawScreen(game *G);
+
+void initWin(game *G);

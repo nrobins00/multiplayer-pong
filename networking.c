@@ -37,6 +37,7 @@ int setupHost(void)
 	char buf[MAXBUFLEN];
 	socklen_t addr_len;
 	char s[INET6_ADDRSTRLEN];
+    int new_fd;
 
 	memset(&hints, 0, sizeof hints);
 	hints.ai_family = AF_INET6; // set to AF_INET to use IPv4
@@ -65,43 +66,40 @@ int setupHost(void)
 		break;
 	}
 
+
+	freeaddrinfo(servinfo);
+
 	if (p == NULL) {
 		fprintf(stderr, "listener: failed to bind socket\n");
 		return 2;
 	}
 
-	freeaddrinfo(servinfo);
+    addr_len = sizeof their_addr;
+    if ((numbytes = recvfrom(sockfd, buf, MAXBUFLEN-1, 0,
+                    (struct sockaddr *)&their_addr, &addr_len)) == -1) {
+        perror("recvfrom");
+        exit(1);
+    }
 
-	printf("listener: waiting to recvfrom...\n");
+    if (connect(sockfd, (struct sockaddr *)&their_addr, addr_len) == -1) {
+        perror("connect");
+        exit(1);
+    }
 
-    return sockfd;
-
-	addr_len = sizeof their_addr;
-	if ((numbytes = recvfrom(sockfd, buf, MAXBUFLEN-1 , 0,
-		(struct sockaddr *)&their_addr, &addr_len)) == -1) {
-		perror("recvfrom");
-		exit(1);
-	}
-
-	printf("listener: got packet from %s\n",
+	printf("connected to %s\n",
 		inet_ntop(their_addr.ss_family,
 			get_in_addr((struct sockaddr *)&their_addr),
 			s, sizeof s));
-	printf("listener: packet is %d bytes long\n", numbytes);
-	buf[numbytes] = '\0';
-	printf("listener: packet contains \"%s\"\n", buf);
 
-	close(sockfd);
-
-	return 0;
+    return sockfd;
 }
 
-void readFromSock(int sockfd, char *buf) {
+/*void readFromSock(int sockfd, char *buf, struct sockaddr_storage *their_addr) {
     socklen_t addr_len;
     int numbytes;
 	char s[INET6_ADDRSTRLEN];
 
-    struct sockaddr_storage their_addr;
+    //struct sockaddr_storage their_addr;
 
 	addr_len = sizeof their_addr;
 	if ((numbytes = recvfrom(sockfd, buf, MAXBUFLEN-1 , 0,
@@ -115,8 +113,9 @@ void readFromSock(int sockfd, char *buf) {
 			get_in_addr((struct sockaddr *)&their_addr),
 			s, sizeof s));
 	printf("listener: packet is %d bytes long\n", numbytes);
+    
 	buf[numbytes] = '\0';
-	printf("listener: packet contains \"%s\"\n", buf);
+	//printf("listener: packet contains \"%s\"\n", buf);
 
-}
+}*/
 
