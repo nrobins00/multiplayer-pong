@@ -18,7 +18,7 @@
 #include "networking.h"
 #include "pong.h"
 
-#define SERVERPORT "4950"	// the port users will be connecting to
+#define SERVERPORT "4951"	// the port users will be connecting to
 #define MAXBUFLEN 100
 
 game G;
@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
 	}
 
 	memset(&hints, 0, sizeof hints);
-	hints.ai_family = AF_INET6; // set to AF_INET to use IPv4
+	hints.ai_family = AF_UNSPEC; // set to AF_INET to use IPv4
 	hints.ai_socktype = SOCK_DGRAM;
 
 	if ((rv = getaddrinfo(argv[1], SERVERPORT, &hints, &servinfo)) != 0) {
@@ -74,6 +74,7 @@ int main(int argc, char *argv[])
 
 	freeaddrinfo(servinfo);
 
+
 	if ((numbytes = send(sockfd, argv[2], strlen(argv[2]), 0))== -1) {
 		perror("talker: sendto");
 		exit(1);
@@ -90,24 +91,11 @@ int main(int argc, char *argv[])
 		exit(1);
     }
 
+    int flags = fcntl(sockfd, F_GETFL);
+    fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
 
 	buf[numbytes] = '\0';
 	printf("talker: packet contains \"%s\"\n", buf);
-
-    int flags = fcntl(sockfd, F_GETFL);
-    printf("%d\n", flags);
-
-    addr_len = sizeof my_addr;
-    if (getsockname(sockfd, (struct sockaddr *)&my_addr, &addr_len) == -1) {
-        perror("getsockname");
-        exit(1);
-    }
-
-
-	//printf("listening on %s on port %d\n",
-	//	inet_ntop(my_addr.ss_family,
-	//		get_in_addr((struct sockaddr *)&my_addr),
-	//		s, sizeof s), get_in_port((struct sockaddr *)&my_addr));
 
     initWin(&G);
     int c;
@@ -144,6 +132,9 @@ int main(int argc, char *argv[])
        usleep(50000);
 
     }
+
+    delwin(G.win);
+    endwin();
 
 	close(sockfd);
 
