@@ -73,8 +73,8 @@ int processKeyPress(game *G,int c, int player) {
     return 0;
 }
 
-void handleGoal(game *G, int left) {
-    if (left) {
+void handleGoal(game *G, int leftScored) {
+    if (leftScored) {
         G->leftScore++;
     } else {
         G->rightScore++;
@@ -90,7 +90,7 @@ int detectCollision(game *G) {
     int bulletY = G->bulletY;
     if (bulletX == 1) {
         if (G->leftPadStart > bulletY || G->leftPadStart < bulletY - 4) {
-            handleGoal(G, 1);
+            handleGoal(G, 0);
             return 1;
         }
         if (bulletY == G->leftPadStart || bulletY == G->leftPadStart + 1) {
@@ -102,7 +102,7 @@ int detectCollision(game *G) {
     }
     if (bulletX == WIDTH - 2) {
         if (G->rightPadStart > bulletY || G->rightPadStart < bulletY - 4) {
-            handleGoal(G, 0);
+            handleGoal(G, 1);
             return 1;
         }
         if (bulletY == G->rightPadStart || bulletY == G->rightPadStart + 1) {
