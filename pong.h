@@ -1,3 +1,5 @@
+#include <ncurses.h>
+
 #define HEIGHT 24
 #define WIDTH 80
 #define PADDLE_SIZE 4
@@ -7,13 +9,11 @@ typedef struct game {
     int leftPadStart;
     int rightPadStart;
     int leftPadV, rightPadV;
-    int bulletX;
-    int bulletY;
-    int bulletVx;
-    int bulletVy;
+    int bulletX, bulletY, bulletVx, bulletVy;
+    int leftScore, rightScore, finished;
 } game;
 
-void processKeyPress(game *G, int c, int side);
+int processKeyPress(game *G, int c, int side);
 
 void detectCollision(game *G);
 

@@ -94,20 +94,21 @@ int main(int argc, char *argv[])
     int flags = fcntl(sockfd, F_GETFL);
     fcntl(sockfd, F_SETFL, flags | O_NONBLOCK);
 
-	buf[numbytes] = '\0';
-	printf("talker: packet contains \"%s\"\n", buf);
+	//buf[numbytes] = '\0';
+	//printf("talker: packet contains \"%s\"\n", buf);
 
     initWin(&G);
     int c;
 
     game hostG;
-    game gameBuf[5];
-    size_t recvAmt;
+    game gameBuf[1];
+    ssize_t recvAmt;
+    int cyclesWithNo;
     
-    while (true) {
+    while (!G.finished) {
        c = wgetch(G.win); 
 
-       if (c == KEY_UP || c == KEY_DOWN) {
+       if (c == KEY_UP || c == KEY_DOWN || c == 'q') {
             if ((numbytes = send(sockfd, &c, sizeof (int), 0)) == -1) {
                 perror("talker: sendto");
                 exit(1);
@@ -118,18 +119,22 @@ int main(int argc, char *argv[])
        memset(&gameBuf, 0, sizeof gameBuf);
 
        recvAmt = recv(sockfd, &gameBuf, sizeof (gameBuf), 0);
+       //TODO: SEND END SIGNAL FROM HOSt or quit if haven't received signal after certain num of cycles
         int numRecvd = recvAmt / sizeof(hostG);
-        hostG = gameBuf[numRecvd - 1];
-       G.bulletX = hostG.bulletX;
-       G.bulletY = hostG.bulletY;
-       G.leftPadStart = hostG.leftPadStart;
-       G.rightPadStart = hostG.rightPadStart;
+        if (recvAmt > 0) {
+            hostG = gameBuf[0];
+           G.bulletX = hostG.bulletX;
+           G.bulletY = hostG.bulletY;
+           G.leftPadStart = hostG.leftPadStart;
+           G.rightPadStart = hostG.rightPadStart;
+           G.leftScore = hostG.leftScore;
+           G.rightScore = hostG.rightScore;
+           G.finished = hostG.finished;
+        }
 
        drawScreen(&G);
-        wmove(G.win, 10, 40);
-        wprintw(G.win, "received: %d", sizeof (gameBuf));
         wrefresh(G.win);
-       usleep(50000);
+       usleep(10000);
 
     }
 
@@ -137,6 +142,8 @@ int main(int argc, char *argv[])
     endwin();
 
 	close(sockfd);
+
+    printf("recvAmt: %lu, sizeof gameBuf: %lu, \n", recvAmt, sizeof gameBuf);
 
 	return 0;
 }

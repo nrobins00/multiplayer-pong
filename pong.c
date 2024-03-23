@@ -3,7 +3,6 @@
 #include <sys/select.h> 
 #include <sys/time.h>
 #include <fcntl.h>
-#include <string.h>
 #include <sys/socket.h>
 
 
@@ -16,10 +15,8 @@ typedef struct game {
     int leftPadStart;
     int rightPadStart;
     int leftPadV, rightPadV;
-    int bulletX;
-    int bulletY;
-    int bulletVx;
-    int bulletVy;
+    int bulletX, bulletY, bulletVx, bulletVy;
+    int leftScore, rightScore, finished;
 } game;
 
 void drawPaddle(WINDOW *win, int startY, int rightSide) {
@@ -35,7 +32,6 @@ void initWin(game *G) {
     cbreak();
     noecho();
     curs_set(0);
-    //refresh();
 
     WINDOW *win = newwin(HEIGHT, WIDTH, 0, 0);
     wborder(win, ' ', ' ', ' ' | A_REVERSE, ' ' | A_REVERSE, ' ', ' ', ' ', ' ');
@@ -45,25 +41,48 @@ void initWin(game *G) {
     keypad(win, TRUE);
 
     G->win = win;
-    //wrefresh(win);
 }
 
-void processKeyPress(game *G,int c, int player) {
-    if (c == KEY_DOWN) {
-        if (player == 0) {
-            G->leftPadStart++;
-        } else {
-            G->rightPadStart++;
-        }
-    } else if (c == KEY_UP) {
-        if (player == 0) {
-            G->leftPadStart--;
-        } else {
-            G->rightPadStart--;
-        }
+void movePaddle(int *padStart, int down) {
+    int newPadStart = *padStart;
+    if (down) {
+        newPadStart++;
     } else {
-        //G.leftPadV = 0;
+        newPadStart--;
     }
+    if (newPadStart >=0 && newPadStart <= (HEIGHT - PADDLE_SIZE)) {
+        *padStart = newPadStart;
+    }
+}
+
+int processKeyPress(game *G,int c, int player) {
+    int padStart;
+    switch (c) {
+        case KEY_DOWN:
+        case KEY_UP:
+            if (player == 0) {
+                movePaddle(&G->leftPadStart, c == KEY_DOWN);
+            } else {
+                movePaddle(&G->rightPadStart, c == KEY_DOWN);
+            }
+            break;
+        case 'q':
+            G->finished = 1;
+            return 1;
+    }
+    return 0;
+}
+
+void handleGoal(game *G, int left) {
+    if (left) {
+        G->leftScore++;
+    } else {
+        G->rightScore++;
+    }
+    G->bulletX = WIDTH / 2;
+    G->bulletY = HEIGHT / 2;
+    G->bulletVx = -1;
+    G->bulletVy = 0;
 }
 
 int detectCollision(game *G) {
@@ -71,7 +90,8 @@ int detectCollision(game *G) {
     int bulletY = G->bulletY;
     if (bulletX == 1) {
         if (G->leftPadStart > bulletY || G->leftPadStart < bulletY - 4) {
-        //    return 1;
+            handleGoal(G, 1);
+            return 1;
         }
         if (bulletY == G->leftPadStart || bulletY == G->leftPadStart + 1) {
             G->bulletVy = -1;
@@ -82,14 +102,18 @@ int detectCollision(game *G) {
     }
     if (bulletX == WIDTH - 2) {
         if (G->rightPadStart > bulletY || G->rightPadStart < bulletY - 4) {
-         //   return 1;
+            handleGoal(G, 0);
+            return 1;
+        }
+        if (bulletY == G->rightPadStart || bulletY == G->rightPadStart + 1) {
+            G->bulletVy = -1;
+        } else if (bulletY == G->rightPadStart + 2 || bulletY == G->rightPadStart + 3) {
+            G->bulletVy = 1;
         }
         G->bulletVx = -1;
     }
     if (bulletY <= 1 || bulletY >= HEIGHT - 2) {
         G->bulletVy *= -1;
-        //wmove(G.win, 7, 35);
-        //wprintw(G.win, "hit at %d", bulletY);
     }
 
         return 0;
@@ -101,6 +125,10 @@ void drawScreen(game *G) {
     drawPaddle(G->win, G->leftPadStart, 0); 
     drawPaddle(G->win, G->rightPadStart, 1); 
     mvwaddch(G->win, G->bulletY, G->bulletX, ' ' | A_REVERSE);
+    wmove(G->win, 7, WIDTH / 4);
+    wprintw(G->win, "%d", G->leftScore);
+    wmove(G->win, 7, 3 * WIDTH / 4);
+    wprintw(G->win, "%d", G->rightScore);
     wrefresh(G->win);
 }
 
